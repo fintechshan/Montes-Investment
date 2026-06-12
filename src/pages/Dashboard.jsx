@@ -1,48 +1,46 @@
-import { useMemo } from 'react';
 import {
-  LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer
+  LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
 } from 'recharts';
 import SummaryCard from '../components/SummaryCard';
 import usePortfolio from '../hooks/usePortfolio';
 import { generatePortfolioHistory } from '../data/mockData';
+import { useMemo } from 'react';
 
-const fmt = (n) => new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(n);
+const historyData = generatePortfolioHistory();
 
-const CustomTooltip = ({ active, payload, label }) => {
+function CustomTooltip({ active, payload, label }) {
   if (active && payload && payload.length) {
     return (
-      <div className="bg-slate-800 border border-slate-600 rounded-lg p-3 shadow-xl">
-        <p className="text-slate-400 text-xs mb-1">{label}</p>
-        <p className="text-green-400 font-bold">{fmt(payload[0].value)}</p>
+      <div className="bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-sm">
+        <p className="text-slate-400 mb-1">{label}</p>
+        <p className="text-emerald-400 font-bold">${payload[0].value.toLocaleString()}</p>
       </div>
     );
   }
   return null;
-};
+}
 
 export default function Dashboard() {
   const { totalValue, totalGainLoss, totalGainLossPercent, holdings } = usePortfolio();
-  const history = useMemo(() => generatePortfolioHistory(), []);
+
+  const trend = totalGainLoss >= 0 ? 'positive' : 'negative';
+  const sign = totalGainLoss >= 0 ? '+' : '';
 
   return (
-    <div className="space-y-8">
-      <div>
-        <h1 className="text-2xl font-bold text-white">Dashboard</h1>
-        <p className="text-slate-400 text-sm mt-1">Portfolio overview</p>
-      </div>
-
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+    <div>
+      <h1 className="text-2xl font-bold text-white mb-6">Dashboard</h1>
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-8">
         <SummaryCard
           title="Total Portfolio Value"
-          value={fmt(totalValue)}
-          subtitle="Current market value"
+          value={`$${totalValue.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
+          subtitle="All holdings combined"
           trend="neutral"
         />
         <SummaryCard
           title="Total Gain / Loss"
-          value={`${totalGainLoss >= 0 ? '+' : ''}${fmt(totalGainLoss)}`}
-          subtitle={`${totalGainLossPercent >= 0 ? '+' : ''}${totalGainLossPercent.toFixed(2)}% all time`}
-          trend={totalGainLoss >= 0 ? 'positive' : 'negative'}
+          value={`${sign}$${Math.abs(totalGainLoss).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
+          subtitle={`${sign}${totalGainLossPercent.toFixed(2)}% all time`}
+          trend={trend}
         />
         <SummaryCard
           title="Holdings"
@@ -53,31 +51,30 @@ export default function Dashboard() {
       </div>
 
       <div className="bg-slate-800 border border-slate-700 rounded-xl p-6">
-        <h2 className="text-lg font-semibold text-white mb-6">Portfolio Value — Last 30 Days</h2>
+        <h2 className="text-white font-semibold mb-4">Portfolio Value — Last 30 Days</h2>
         <ResponsiveContainer width="100%" height={300}>
-          <LineChart data={history} margin={{ top: 5, right: 20, left: 10, bottom: 5 }}>
+          <LineChart data={historyData} margin={{ top: 5, right: 20, bottom: 5, left: 10 }}>
             <CartesianGrid strokeDasharray="3 3" stroke="#334155" />
             <XAxis
               dataKey="date"
               tick={{ fill: '#94a3b8', fontSize: 11 }}
               tickLine={false}
-              axisLine={{ stroke: '#334155' }}
               interval={4}
             />
             <YAxis
               tick={{ fill: '#94a3b8', fontSize: 11 }}
               tickLine={false}
-              axisLine={false}
-              tickFormatter={(v) => `$${(v / 1000).toFixed(0)}k`}
+              tickFormatter={v => `$${(v / 1000).toFixed(0)}k`}
+              width={50}
             />
             <Tooltip content={<CustomTooltip />} />
             <Line
               type="monotone"
               dataKey="value"
-              stroke="#22c55e"
+              stroke="#10b981"
               strokeWidth={2}
               dot={false}
-              activeDot={{ r: 5, fill: '#22c55e', stroke: '#0f172a', strokeWidth: 2 }}
+              activeDot={{ r: 4, fill: '#10b981' }}
             />
           </LineChart>
         </ResponsiveContainer>
