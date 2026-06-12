@@ -34,3 +34,6 @@ export function generatePortfolioHistory() {
   }
   return data;
 }
+
+export const mockHoldings = MOCK_HOLDINGS;
+export const mockMarketData = MOCK_MARKET_DATA;

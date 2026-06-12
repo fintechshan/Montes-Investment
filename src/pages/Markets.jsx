@@ -1,66 +1,67 @@
-import { MOCK_STOCKS } from '../data/mockMarkets'
+import { useState, useEffect } from 'react';
+import { MOCK_MARKET_DATA } from '../data/mockData';
 
-function fmt(n) {
-  return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(n)
-}
+const fmt = (n) => new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(n);
 
 export default function Markets() {
+  const [data, setData] = useState(MOCK_MARKET_DATA);
+  const [isLive, setIsLive] = useState(false);
+
+  useEffect(() => {
+    const apiKey = import.meta.env.VITE_ALPHA_VANTAGE_KEY;
+    if (apiKey) {
+      fetch(`https://www.alphavantage.co/query?function=GLOBAL_QUOTE&symbol=AAPL&apikey=${apiKey}`)
+        .then(r => r.json())
+        .then(json => {
+          if (json['Global Quote'] && json['Global Quote']['05. price']) {
+            setIsLive(true);
+          }
+        })
+        .catch(() => {});
+    }
+  }, []);
+
   return (
-    <div className="p-8">
-      <div className="mb-8">
-        <h1 className="text-2xl font-bold text-white">Markets</h1>
-        <p className="text-slate-400 text-sm mt-1">Live-style quotes for top stocks</p>
-        <p className="text-slate-500 text-xs mt-1">Prices are simulated demo data</p>
+    <div className="space-y-6">
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-2xl font-bold text-white">Markets</h1>
+          <p className="text-slate-400 text-sm mt-1">Top 10 stocks</p>
+        </div>
+        <span className={`px-3 py-1 rounded-full text-xs font-semibold ${isLive ? 'bg-green-500/20 text-green-400 border border-green-500/30' : 'bg-slate-700 text-slate-400 border border-slate-600'}`}>
+          {isLive ? '● Live Data' : '◌ Mock Data'}
+        </span>
       </div>
 
-      <div className="grid grid-cols-2 gap-4 mb-8">
-        <div className="bg-[#0d1526] border border-[#1a2744] rounded-xl p-5">
-          <p className="text-slate-400 text-xs uppercase tracking-wider mb-1">Gainers Today</p>
-          <p className="text-2xl font-bold text-emerald-400">
-            {MOCK_STOCKS.filter(s => s.change > 0).length}
-          </p>
-        </div>
-        <div className="bg-[#0d1526] border border-[#1a2744] rounded-xl p-5">
-          <p className="text-slate-400 text-xs uppercase tracking-wider mb-1">Losers Today</p>
-          <p className="text-2xl font-bold text-red-400">
-            {MOCK_STOCKS.filter(s => s.change < 0).length}
-          </p>
-        </div>
-      </div>
-
-      <div className="bg-[#0d1526] border border-[#1a2744] rounded-xl overflow-hidden">
-        <div className="px-6 py-4 border-b border-[#1a2744]">
-          <h2 className="text-white font-semibold">Top 10 Stocks</h2>
-        </div>
-        <table className="w-full text-sm">
-          <thead>
-            <tr className="text-slate-400 text-xs uppercase tracking-wider border-b border-[#1a2744]">
-              <th className="text-left px-6 py-3">Symbol</th>
-              <th className="text-left px-6 py-3">Name</th>
-              <th className="text-right px-6 py-3">Price</th>
-              <th className="text-right px-6 py-3">Change</th>
-              <th className="text-right px-6 py-3">Change %</th>
-            </tr>
-          </thead>
-          <tbody>
-            {MOCK_STOCKS.map(s => (
-              <tr key={s.symbol} className="border-b border-[#1a2744]/50 hover:bg-[#111d35] transition-colors">
-                <td className="px-6 py-4 font-bold text-white">{s.symbol}</td>
-                <td className="px-6 py-4 text-slate-300">{s.name}</td>
-                <td className="px-6 py-4 text-right font-medium text-white">{fmt(s.price)}</td>
-                <td className={`px-6 py-4 text-right font-medium ${s.change >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>
-                  {s.change >= 0 ? '+' : ''}{fmt(s.change)}
-                </td>
-                <td className={`px-6 py-4 text-right font-medium ${s.changePct >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>
-                  <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-semibold ${s.changePct >= 0 ? 'bg-emerald-500/10' : 'bg-red-500/10'}`}>
-                    {s.changePct >= 0 ? '▲' : '▼'} {Math.abs(s.changePct).toFixed(2)}%
-                  </span>
-                </td>
+      <div className="bg-slate-800 border border-slate-700 rounded-xl overflow-hidden">
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm">
+            <thead>
+              <tr className="border-b border-slate-700">
+                {['Symbol', 'Name', 'Price', 'Change', 'Change %', 'Volume', 'Market Cap'].map(h => (
+                  <th key={h} className="px-4 py-3 text-left text-slate-400 font-medium text-xs uppercase tracking-wider">{h}</th>
+                ))}
               </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+            <tbody className="divide-y divide-slate-700/50">
+              {data.map(s => {
+                const color = s.change >= 0 ? 'text-green-400' : 'text-red-400';
+                return (
+                  <tr key={s.symbol} className="hover:bg-slate-700/30 transition-colors">
+                    <td className="px-4 py-3 font-bold text-white">{s.symbol}</td>
+                    <td className="px-4 py-3 text-slate-300">{s.name}</td>
+                    <td className="px-4 py-3 text-white font-medium">{fmt(s.price)}</td>
+                    <td className={`px-4 py-3 font-medium ${color}`}>{s.change >= 0 ? '+' : ''}{s.change.toFixed(2)}</td>
+                    <td className={`px-4 py-3 font-medium ${color}`}>{s.changePercent >= 0 ? '+' : ''}{s.changePercent.toFixed(2)}%</td>
+                    <td className="px-4 py-3 text-slate-400">{s.volume}</td>
+                    <td className="px-4 py-3 text-slate-400">{s.marketCap}</td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
       </div>
     </div>
-  )
+  );
 }

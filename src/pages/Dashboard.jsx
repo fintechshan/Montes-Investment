@@ -1,110 +1,87 @@
-import { useMemo } from 'react'
-import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from 'recharts'
-import { usePortfolio } from '../hooks/usePortfolio'
-import { generateHistory } from '../data/mockMarkets'
+import { useMemo } from 'react';
+import {
+  LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer
+} from 'recharts';
+import SummaryCard from '../components/SummaryCard';
+import usePortfolio from '../hooks/usePortfolio';
+import { generatePortfolioHistory } from '../data/mockData';
 
-function StatCard({ label, value, sub, positive }) {
-  return (
-    <div className="bg-[#0d1526] border border-[#1a2744] rounded-xl p-5">
-      <p className="text-slate-400 text-xs font-medium uppercase tracking-wider mb-1">{label}</p>
-      <p className="text-2xl font-bold text-white">{value}</p>
-      {sub && (
-        <p className={`text-sm mt-1 font-medium ${positive === undefined ? 'text-slate-400' : positive ? 'text-emerald-400' : 'text-red-400'}`}>
-          {sub}
-        </p>
-      )}
-    </div>
-  )
-}
-
-function fmt(n) {
-  return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', minimumFractionDigits: 2 }).format(n)
-}
+const fmt = (n) => new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(n);
 
 const CustomTooltip = ({ active, payload, label }) => {
-  if (active && payload?.length) {
+  if (active && payload && payload.length) {
     return (
-      <div className="bg-[#111d35] border border-[#1a2744] rounded-lg px-3 py-2 text-sm">
-        <p className="text-slate-400">{label}</p>
-        <p className="text-emerald-400 font-semibold">{fmt(payload[0].value)}</p>
+      <div className="bg-slate-800 border border-slate-600 rounded-lg p-3 shadow-xl">
+        <p className="text-slate-400 text-xs mb-1">{label}</p>
+        <p className="text-green-400 font-bold">{fmt(payload[0].value)}</p>
       </div>
-    )
+    );
   }
-  return null
-}
+  return null;
+};
 
 export default function Dashboard() {
-  const { holdings, totalValue, totalGain, totalGainPct } = usePortfolio()
-
-  const chartData = useMemo(() => generateHistory(totalValue), [])
+  const { totalValue, totalGainLoss, totalGainLossPercent, holdings } = usePortfolio();
+  const history = useMemo(() => generatePortfolioHistory(), []);
 
   return (
-    <div className="p-8">
-      <div className="mb-8">
+    <div className="space-y-8">
+      <div>
         <h1 className="text-2xl font-bold text-white">Dashboard</h1>
-        <p className="text-slate-400 text-sm mt-1">Welcome back — here's your portfolio overview</p>
+        <p className="text-slate-400 text-sm mt-1">Portfolio overview</p>
       </div>
 
-      {/* Stat cards */}
-      <div className="grid grid-cols-4 gap-4 mb-8">
-        <StatCard label="Total Value" value={fmt(totalValue)} />
-        <StatCard
-          label="Total Gain / Loss"
-          value={fmt(totalGain)}
-          sub={`${totalGain >= 0 ? '+' : ''}${totalGainPct.toFixed(2)}% all time`}
-          positive={totalGain >= 0}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <SummaryCard
+          title="Total Portfolio Value"
+          value={fmt(totalValue)}
+          subtitle="Current market value"
+          trend="neutral"
         />
-        <StatCard label="Holdings" value={holdings.length} sub="active positions" />
-        <StatCard
-          label="Best Performer"
-          value={holdings.length ? holdings.reduce((a, b) => a.gainPct > b.gainPct ? a : b).symbol : '—'}
-          sub={holdings.length ? `+${Math.max(...holdings.map(h => h.gainPct)).toFixed(2)}%` : ''}
-          positive={true}
+        <SummaryCard
+          title="Total Gain / Loss"
+          value={`${totalGainLoss >= 0 ? '+' : ''}${fmt(totalGainLoss)}`}
+          subtitle={`${totalGainLossPercent >= 0 ? '+' : ''}${totalGainLossPercent.toFixed(2)}% all time`}
+          trend={totalGainLoss >= 0 ? 'positive' : 'negative'}
+        />
+        <SummaryCard
+          title="Holdings"
+          value={holdings.length}
+          subtitle="Active positions"
+          trend="neutral"
         />
       </div>
 
-      {/* Chart */}
-      <div className="bg-[#0d1526] border border-[#1a2744] rounded-xl p-6 mb-8">
-        <h2 className="text-white font-semibold mb-4">Portfolio Value — Last 30 Days</h2>
-        <ResponsiveContainer width="100%" height={260}>
-          <LineChart data={chartData}>
-            <CartesianGrid strokeDasharray="3 3" stroke="#1a2744" />
-            <XAxis dataKey="date" tick={{ fill: '#64748b', fontSize: 11 }} tickLine={false} axisLine={false} interval={4} />
-            <YAxis tick={{ fill: '#64748b', fontSize: 11 }} tickLine={false} axisLine={false} tickFormatter={v => `$${(v/1000).toFixed(0)}k`} />
+      <div className="bg-slate-800 border border-slate-700 rounded-xl p-6">
+        <h2 className="text-lg font-semibold text-white mb-6">Portfolio Value — Last 30 Days</h2>
+        <ResponsiveContainer width="100%" height={300}>
+          <LineChart data={history} margin={{ top: 5, right: 20, left: 10, bottom: 5 }}>
+            <CartesianGrid strokeDasharray="3 3" stroke="#334155" />
+            <XAxis
+              dataKey="date"
+              tick={{ fill: '#94a3b8', fontSize: 11 }}
+              tickLine={false}
+              axisLine={{ stroke: '#334155' }}
+              interval={4}
+            />
+            <YAxis
+              tick={{ fill: '#94a3b8', fontSize: 11 }}
+              tickLine={false}
+              axisLine={false}
+              tickFormatter={(v) => `$${(v / 1000).toFixed(0)}k`}
+            />
             <Tooltip content={<CustomTooltip />} />
-            <Line type="monotone" dataKey="value" stroke="#10b981" strokeWidth={2} dot={false} />
+            <Line
+              type="monotone"
+              dataKey="value"
+              stroke="#22c55e"
+              strokeWidth={2}
+              dot={false}
+              activeDot={{ r: 5, fill: '#22c55e', stroke: '#0f172a', strokeWidth: 2 }}
+            />
           </LineChart>
         </ResponsiveContainer>
       </div>
-
-      {/* Top holdings table */}
-      <div className="bg-[#0d1526] border border-[#1a2744] rounded-xl overflow-hidden">
-        <div className="px-6 py-4 border-b border-[#1a2744]">
-          <h2 className="text-white font-semibold">Top Holdings</h2>
-        </div>
-        <table className="w-full text-sm">
-          <thead>
-            <tr className="text-slate-400 text-xs uppercase tracking-wider border-b border-[#1a2744]">
-              <th className="text-left px-6 py-3">Symbol</th>
-              <th className="text-right px-6 py-3">Shares</th>
-              <th className="text-right px-6 py-3">Value</th>
-              <th className="text-right px-6 py-3">Gain/Loss</th>
-            </tr>
-          </thead>
-          <tbody>
-            {[...holdings].sort((a, b) => b.value - a.value).slice(0, 5).map(h => (
-              <tr key={h.id} className="border-b border-[#1a2744]/50 hover:bg-[#111d35] transition-colors">
-                <td className="px-6 py-4 font-semibold text-white">{h.symbol}</td>
-                <td className="px-6 py-4 text-right text-slate-300">{h.shares}</td>
-                <td className="px-6 py-4 text-right text-white">{fmt(h.value)}</td>
-                <td className={`px-6 py-4 text-right font-medium ${h.gain >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>
-                  {h.gain >= 0 ? '+' : ''}{fmt(h.gain)} ({h.gainPct.toFixed(2)}%)
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
     </div>
-  )
+  );
 }
