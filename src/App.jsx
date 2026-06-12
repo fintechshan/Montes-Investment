@@ -1,12 +1,12 @@
-import { BrowserRouter, Routes, Route } from 'react-router-dom'
-import Sidebar from './components/Sidebar'
-import Dashboard from './pages/Dashboard'
-import Portfolio from './pages/Portfolio'
-import Markets from './pages/Markets'
+import { HashRouter, Routes, Route } from 'react-router-dom';
+import Sidebar from './components/Sidebar';
+import Dashboard from './pages/Dashboard';
+import Portfolio from './pages/Portfolio';
+import Markets from './pages/Markets';
 
 export default function App() {
   return (
-    <BrowserRouter basename="/montes-investment">
+    <HashRouter>
       <div className="flex min-h-screen bg-slate-950 text-white">
         <Sidebar />
         <main className="flex-1 ml-64 p-8">
@@ -17,6 +17,6 @@ export default function App() {
           </Routes>
         </main>
       </div>
-    </BrowserRouter>
-  )
+    </HashRouter>
+  );
 }
